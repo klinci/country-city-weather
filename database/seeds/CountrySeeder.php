@@ -16,11 +16,11 @@ class CountrySeeder extends Seeder
 		$data = file_get_contents('https://api.myjson.com/bins/b8dqy');
 		$clean_country_with_regex = preg_replace('/\s\([a-zA-Z\s\.]+\)/', '', $data);
 		$countries = json_decode($clean_country_with_regex);
-		$no = 1;
+		$rows = [];
 		foreach ($countries as $country) {
-			Country::create([
-				'name' => $country->en
-			]);
+			$rows[] = [ 'name' => $country->en ];
 		}
+
+		Country::insert($rows);
 	}
 }

@@ -10,7 +10,7 @@ class HomeController extends Controller
 {
 
 	const countries = 'storages/json/countries.json';
-	const cities = 'storages/json/cities_and_regions/cities/';
+	const cities = 'http://service.fajarpunya.com/storages/json/cities_and_regions/cities/';
 	const owm_uri = 'http://api.openweathermap.org/data/2.5/weather?q=';
 
   public function index()
@@ -27,33 +27,34 @@ class HomeController extends Controller
 
   public function exportCity(Request $request, $name)
   {
+  	try
+    {
+      $cleanName = str_replace(" ", "%20", $name);
+      $url = self::cities.$cleanName.'.json';
+      $cities = json_decode(file_get_contents($url));
+      $rows = [];
 
-  	try {
+      foreach ($cities->cities as $city) {
 
-  		$cleanName = str_replace(" ", "%20", $name);
-  		$url = url(self::cities.$cleanName.'.json');
+        $json = ['country_id' => $request->country_id, 'name' =>  $city->name];
 
-  		$cities = json_decode(file_get_contents($url));
-  		foreach ($cities->cities as $city) {
+        $city = City::where('unique_key', md5(json_encode($json)))->first();
 
-  			$json = [
-  				'country_id' => $request->country_id, 'name' =>  $city->name
-  			];
+        if(!$city) {
+          $rows[] = [
+            'country_id' => $json['country_id'],
+            'name' => $json['name'],
+            'unique_key' => md5(json_encode($json)),
+          ];
+        }
+      }
 
-  			$city = City::where('unique_key', json_encode($json))->first();
+      City::insert($rows);
+      return [
+        'error' => 0,
+        'message' => 'All city inserted.'
+      ];
 
-  			if(!$city) {
-	  			City::create([
-	  				'country_id' => $json['country_id'],
-	  				'name' => $json['name'],
-	  				'unique_key' => json_encode($json),
-	  			]);
-  			}
-  		}
-  		return [
-  			'error' => 0,
-  			'message' => 'All city inserted.'
-  		];
   	} catch (\Exception $e) {
   		return [
   			'error' => 1,
@@ -92,9 +93,11 @@ class HomeController extends Controller
 		$info 	= curl_getinfo($ch);
 
 		if($data) {
-
 			$decode = json_decode($data);
-			return $this->getNearby($decode);
+      if($decode->cod != 404) {
+        return $this->getNearby($decode);
+      }
+      return $data;
 		} else {
 			return $error;
 		}

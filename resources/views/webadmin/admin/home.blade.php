@@ -105,7 +105,7 @@ var map;
     service.nearbySearch({
       location: pyrmont,
       radius: 15,
-      type: ['store']
+      type: ['locality']
     },
       function(results, status, pagination) {
         if (status !== 'OK') return;
@@ -164,13 +164,14 @@ var map;
                   jQuery('#map-show').html(loader('Get weather ...'));
                 },
                 success : function(res) {
-                  jQuery('#nearby').html("");
-                  if(res) {
+
+                  if(res.first != undefined) {
 
                     if(res.first.coord != undefined) {
+
+                    jQuery('#nearby').html("");
                     var lat = res.first.coord.lat,
                         lon = res.first.coord.lon;
-
                     initMap(lat,lon);
    
                     jQuery('#first_city').html(`
